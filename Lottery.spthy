@@ -1,0 +1,42 @@
+theory Lottery
+begin
+
+builtins: hashing, asymmetric-encryption, signing
+
+// Creer une paire de clé
+rule Creer_pk:
+    [ Fr(~ltk) ]
+  -->
+    [ !Ltk($A, ~ltk), !Pk($A, pk(~ltk)) ]
+
+// Envoyer la clé publique sur le canal
+rule Envoyer_pk:
+    [ !Pk(A, pubkey) ]
+  -->
+    [ Out(pubkey) ]
+
+// Révéler la clé publique
+rule Reveal_ltk:
+    [ !Ltk(A, ltk) ]
+  --[ LtkReveal(A) ]->
+    [ Out(ltk) ]
+
+// Créer le secret pour jouer
+rule Creer_secret:
+	[ Fr(~secret) ]
+  --> 
+  	[ !Secret($A, ~secret) ]
+
+// Envoyer le hashé du secret sur le canal publique
+rule Envoyer_hash_secret:
+	[ !Secret(A, secret) ]
+  -->
+  	[ Out(h(secret)) ]
+/*
+rule Init:
+	[ mise ]
+  -->
+  	[ sign(Init(mise, !Ltk(A, ltk))) , Out(sign(Init(mise, !Ltk(A, ltk))))]
+  	*/
+
+end
