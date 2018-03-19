@@ -32,11 +32,17 @@ rule Envoyer_hash_secret:
 	[ !Secret(A, secret) ]
   -->
   	[ Out(h(secret)) ]
-/*
+	
+	/*
 rule Init:
 	[ mise ]
   -->
-  	[ sign(Init(mise, !Ltk(A, ltk))) , Out(sign(Init(mise, !Ltk(A, ltk))))]
+  	[ sign(Init($A, mise), !Ltk($A, ~ltk)) , Out(sign(Init($A, mise) !Ltk($A, ~ltk))) ]
+	
+rule Win:
+	[ sign(Init(A, mise), ltk) ]
+  -->
+	[ Win(A,A) ]
   	*/
 
 end
