@@ -5,38 +5,55 @@ builtins: hashing, asymmetric-encryption, signing
 
 // Creer une paire de clé
 rule Creer_pk:
-    [ Fr(~ltk) ]
+    [ Fr(sk) ]
   -->
-    [ !Ltk($A, ~ltk), !Pk($A, pk(~ltk)) ]
+    [ !SK(sk), Out(pk(sk)) ]
 
-// Envoyer la clé publique sur le canal
-rule Envoyer_pk:
-    [ !Pk(A, pubkey) ]
-  -->
-    [ Out(pubkey) ]
-
-// Révéler la clé publique
-rule Reveal_ltk:
-    [ !Ltk(A, ltk) ]
-  --[ LtkReveal(A) ]->
-    [ Out(ltk) ]
-
-// Créer le secret pour jouer
+// Créer le secret
 rule Creer_secret:
-	[ Fr(~secret) ]
+	[ Fr(secret) ]
   --> 
-  	[ !Secret($A, ~secret) ]
+  	[ Hash(h(secret), $A), Out(h(secret)) ]
 
-// Envoyer le hashé du secret sur le canal publique
-rule Envoyer_hash_secret:
-	[ !Secret(A, secret) ]
-  -->
-  	[ Out(h(secret)) ]
-/*
-rule Init:
-	[ mise ]
-  -->
-  	[ sign(Init(mise, !Ltk(A, ltk))) , Out(sign(Init(mise, !Ltk(A, ltk))))]
-  	*/
 
+rule Init1:
+	[ SK(sk), mise ]
+  -->
+  	[ Out(sign('mise', sk))]
+
+rule Init2:
+  [ In(sign('mise1', skA)), !SK(skA), In(sign('mise2', skB)), !SK(skB) ]
+  --[Neq(skA,skB), Eq('mise1','mise2')]->
+  [ BC('mise1', 'mise2', skA, skB) ]
+
+rule InitBC:
+[ BC('mise1', 'mise2', skA, skB) ]
+-->
+[ W(A, 'mise1'), W(B,'mise2') ]
+
+rule Win:
+[ W(A,'mise1'), W(B,'mise2') ]
+-->
+[ T1('0',A,B) ]
+
+rule envoiBC:
+[ m ]
+-->
+[ BC(m) ]
+
+
+rule Match:
+[ T1('0',A,B), secretA, Hash(h(secret),A) ]
+--Eq(h(secretA),h(secret))->
+[ T2('0',A,B,secretA) ]
+
+rule Match2:
+[ T2('0',A,B,secretA), secretB, Hash(h(secret),B) ]
+--Eq(h(secretB),h(secret))->
+[ T3('0',A,B,secretA, secretB) ]
+
+rule Winner:
+[ T3('0',A,B,secretA, secretB) ]
+-->
+[ W('epsilon', A) ]
 end
