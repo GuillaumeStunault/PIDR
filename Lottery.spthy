@@ -7,13 +7,13 @@ builtins: hashing, asymmetric-encryption, signing, multiset, revealing-signing
 rule Creer_pk:
     [ Fr(sk) ]
   -->
-    [ !SK(sk), Out(pk(sk)) ]
+    [ !SK(sk,$A), Out(pk(sk)) ]
 
 // Créer le secret
 rule Creer_secret:
-	[ Fr(secret) ]
+	[ Fr(secret) , !SK(skA,A)]
   --> 
-  	[ !Secret(secret), Out(<sign(h(secret),skA),$A>) ]
+  	[ !Secret(secret), Out(<sign(h(secret),skA),A>) ]
 
 rule Depart:
   [  ]
@@ -23,24 +23,29 @@ rule Depart:
 rule Argent:
   let mise = '1'
   in
-  [ PA(J, x + mise), SK(sk) ]
+  [ PA(J, x + mise), !SK(sk,A) ]
   -->
   [ PA(J, x), Out(sign(mise, sk))]
 
 rule Init:
-  [ In(sign(mise, skA)), !SK(skA), In(sign(mise, skB)), !SK(skB) ]
+  [ In(sign(mise, skA)), !SK(skA,$A), In(sign(mise, skB)), !SK(skB,$A) ]
   --[Neq(skA,skB)]->
   [ BC(<mise,skA>, <mise,skB>) ]
 
 rule InitBC:
 [ BC(<mise,skA>, <mise,skB>) ]
 -->
-[ W(A, mise), W(B,mise) ]
+[ W1($A, mise), W1($B,mise) ]
+
+rule InitW:
+[ W1(J, mise)]
+-->
+[ W('0',J,mise)]
 
 rule Win:
-[ W(A,mise), W(B,mise) ]
+[ W('0',$A,mise), W('0',$B,mise) ]
 -->
-[ T1('0',A,B, mise+mise) ]
+[ T1('0',$A,$B, mise+mise) ]
 
 /*rule envoiBC:
 [ m ]
@@ -55,12 +60,12 @@ rule Match:
 [ T2('0',A,B,secretA, mise) ]
 */
 rule Match:
-[ T1('0',A,B, mise), !Secret(secretA), !SK(skA), In(<h(secret),A>) ]
+[ T1('0',$A,$B, mise), !Secret(secretA), !SK(skA,$A), In(<h(secret),$A>) ]
 --[Eq(h(secretA), h(secret))]->
-[ T2('0',A,B,secretA, mise) ]
+[ T2('0',$A,$B,secretA, mise) ]
 
 rule GetMsg:
-[ In(<sign(h(secret),sk),J>), !SK(sk) ]
+[ In(<sign(h(secret),sk),J>), !SK(sk,J) ]
 -->
 [ Out(<h(secret), J>) ]
 
@@ -71,23 +76,37 @@ rule Match2:
 [ T3('0',A,B,secretA, secretB, mise) ]
 */
 rule Match2:
-[ T2('0',A,B,secretA, mise), !Secret(secretB), !SK(skB), In(<h(secret),B>) ]
+[ T2('0',$A,$B,secretA, mise), !Secret(secretB), !SK(skB,$B), In(<h(secret),$B>) ]
 --[Eq(h(secretB), h(secret))]->
-[ T3('0',A,B,secretA, secretB, mise) ]
+[ T3('0',$A,$B,secretA, secretB, mise) ]
 
 rule Winner:
-[ T3('0',A,B,secretA, secretB, mise) ]
+[ T3('0',$A,B,secretA, secretB, mise) ]
 -->
-[ W('epsilon', A, mise) ]
+[ W('epsilon', $A, mise) ]
 
 rule Winner2:
-[ T3('0',A,B,secretA, secretB, mise) ]
+[ T3('0',A,$B,secretA, secretB, mise) ]
 -->
-[ W('epsilon', B, mise) ]
+[ W('epsilon', $B, mise) ]
 
 rule Fin:
-[ W('epsilon', J, mise) ]
--->
+[ W('epsilon', J, mise), PA(J,x)]
+--[ Win() ]->
 [ PA(J, x+mise) ]
+
+
+restriction Equality:
+  "All x y #i. Eq(x,y) @#i ==> x = y"
+
+  restriction Inequality:
+  "All x #i. Neq(x,x) @ #i ==> F"
+
+lemma executable:
+exists-trace
+" Ex #i. Win() @ i "
+
 end
+
+
 
