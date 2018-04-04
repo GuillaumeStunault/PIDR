@@ -1,7 +1,7 @@
 theory Lottery
 begin
 
-builtins: hashing, asymmetric-encryption, signing
+builtins: hashing, asymmetric-encryption, signing, multiset, revealing-signing
 
 // Creer une paire de clé
 rule Creer_pk:
@@ -13,47 +13,81 @@ rule Creer_pk:
 rule Creer_secret:
 	[ Fr(secret) ]
   --> 
-  	[ Hash(h(secret), $A), Out(h(secret)) ]
+  	[ !Secret(secret), Out(<sign(h(secret),skA),$A>) ]
 
-
-rule Init1:
-	[ SK(sk), mise ]
+rule Depart:
+  [  ]
   -->
-  	[ Out(sign('mise', sk))]
+  [ PA($A,'1'+'1'+'1') ]
 
-rule Init2:
-  [ In(sign('mise1', skA)), !SK(skA), In(sign('mise2', skB)), !SK(skB) ]
-  --[Neq(skA,skB), Eq('mise1','mise2')]->
-  [ BC('mise1', 'mise2', skA, skB) ]
+rule Argent:
+  let mise = '1'
+  in
+  [ PA(J, x + mise), SK(sk) ]
+  -->
+  [ PA(J, x), Out(sign(mise, sk))]
+
+rule Init:
+  [ In(sign(mise, skA)), !SK(skA), In(sign(mise, skB)), !SK(skB) ]
+  --[Neq(skA,skB)]->
+  [ BC(<mise,skA>, <mise,skB>) ]
 
 rule InitBC:
-[ BC('mise1', 'mise2', skA, skB) ]
+[ BC(<mise,skA>, <mise,skB>) ]
 -->
-[ W(A, 'mise1'), W(B,'mise2') ]
+[ W(A, mise), W(B,mise) ]
 
 rule Win:
-[ W(A,'mise1'), W(B,'mise2') ]
+[ W(A,mise), W(B,mise) ]
 -->
-[ T1('0',A,B) ]
+[ T1('0',A,B, mise+mise) ]
 
-rule envoiBC:
+/*rule envoiBC:
 [ m ]
 -->
 [ BC(m) ]
+*/
 
-
+/*
 rule Match:
-[ T1('0',A,B), secretA, Hash(h(secret),A) ]
---Eq(h(secretA),h(secret))->
-[ T2('0',A,B,secretA) ]
+[ T1('0',A,B, mise), !Secret(secretA), !SK(skA), In(<sign(h(secret),skA),A>) ]
+--[Eq(h(secretA), getMessage(revealingSign(h(secret),skA)))]->
+[ T2('0',A,B,secretA, mise) ]
+*/
+rule Match:
+[ T1('0',A,B, mise), !Secret(secretA), !SK(skA), In(<h(secret),A>) ]
+--[Eq(h(secretA), h(secret))]->
+[ T2('0',A,B,secretA, mise) ]
 
+rule GetMsg:
+[ In(<sign(h(secret),sk),J>), !SK(sk) ]
+-->
+[ Out(<h(secret), J>) ]
+
+/*
 rule Match2:
-[ T2('0',A,B,secretA), secretB, Hash(h(secret),B) ]
---Eq(h(secretB),h(secret))->
-[ T3('0',A,B,secretA, secretB) ]
+[ T2('0',A,B,secretA, mise), !Secret(secretB), !SK(skB), In(<sign(h(secret),skB),B>) ]
+--[Eq(h(secretB), getMessage(revealingSign(h(secret),skB)))]->
+[ T3('0',A,B,secretA, secretB, mise) ]
+*/
+rule Match2:
+[ T2('0',A,B,secretA, mise), !Secret(secretB), !SK(skB), In(<h(secret),B>) ]
+--[Eq(h(secretB), h(secret))]->
+[ T3('0',A,B,secretA, secretB, mise) ]
 
 rule Winner:
-[ T3('0',A,B,secretA, secretB) ]
+[ T3('0',A,B,secretA, secretB, mise) ]
 -->
-[ W('epsilon', A) ]
+[ W('epsilon', A, mise) ]
+
+rule Winner2:
+[ T3('0',A,B,secretA, secretB, mise) ]
+-->
+[ W('epsilon', B, mise) ]
+
+rule Fin:
+[ W('epsilon', J, mise) ]
+-->
+[ PA(J, x+mise) ]
 end
+
