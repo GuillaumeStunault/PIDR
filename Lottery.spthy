@@ -7,7 +7,7 @@ builtins: hashing, asymmetric-encryption, signing, multiset, revealing-signing
 rule Creer_pk:
     [ Fr(sk) ]
   -->
-    [ !SK(sk,$A), Out(pk(sk)) ]
+    [ !SK(sk,$A), Out(pk(sk)), PA(sign(sk,sk),'1'+'1'+'1') ]
 
 // Créer le secret
 rule Creer_secret:
@@ -15,12 +15,14 @@ rule Creer_secret:
   --> 
   	[ !Secret(secret), Out(<sign(h(secret),skA),A>) ]
 
+/*
 rule Depart:
   [  ]
   -->
   [ PA($A,'1'+'1'+'1') ]
+*/
 
-rule Argent:
+rule L_Argent:
   let mise = '1'
   in
   [ PA(J, x + mise), !SK(sk,A) ]
@@ -28,8 +30,8 @@ rule Argent:
   [ PA(J, x), Out(sign(mise, sk))]
 
 rule Init:
-  [ In(sign(mise, skA)), !SK(skA,$A), In(sign(mise, skB)), !SK(skB,$A) ]
-  --[Neq(skA,skB)]->
+  [ In(sign(mise, skA)), !SK(skA,$A), In(sign(mise, skB)), !SK(skB,$B) ]
+  --[Neq(skA,skB),Start($A,$B)]->
   [ BC(<mise,skA>, <mise,skB>) ]
 
 rule InitBC:
@@ -81,18 +83,18 @@ rule Match2:
 [ T3('0',$A,$B,secretA, secretB, mise) ]
 
 rule Winner:
-[ T3('0',$A,B,secretA, secretB, mise) ]
+[ T3('0',$A,$B,secretA, secretB, mise) ]
 -->
 [ W('epsilon', $A, mise) ]
 
 rule Winner2:
-[ T3('0',A,$B,secretA, secretB, mise) ]
+[ T3('0',$A,$B,secretA, secretB, mise) ]
 -->
 [ W('epsilon', $B, mise) ]
 
 rule Fin:
-[ W('epsilon', J, mise), PA(J,x)]
---[ Win() ]->
+[ W('epsilon', J, mise), !SK(skJ,J), PA(sign(skJ,skJ),x)]
+--[ Win(J) ]->
 [ PA(J, x+mise) ]
 
 
@@ -104,7 +106,15 @@ restriction Equality:
 
 lemma executable:
 exists-trace
-" Ex #i. Win() @ i "
+" Ex J #i. Win(J) @ i "
+
+lemma existe_Winner:
+exists-trace
+"  Ex X Y #i #j. (Win(X)@i & Start(X,Y)@j)" 
+
+lemma existe_Winner2:
+exists-trace
+"  Ex X Y #i #j. (Win(Y)@i & Start(X,Y)@j)" 
 
 end
 
