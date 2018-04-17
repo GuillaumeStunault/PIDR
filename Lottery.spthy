@@ -7,96 +7,75 @@ builtins: hashing, asymmetric-encryption, signing, multiset, revealing-signing
 rule Creer_pk:
     [ Fr(sk) ]
   -->
-    [ !SK(sk,$A), Out(pk(sk)), PA(sign(sk,sk),'1'+'1'+'1') ]
+    [ !SK(sk,$A), Out(pk(sk)), !PA(sk,'1'+'1'+'1') ]
 
 // Créer le secret
 rule Creer_secret:
 	[ Fr(secret) , !SK(skA,A)]
   --> 
-  	[ !Secret(secret), Out(<sign(h(secret),skA),A>) ]
-
-/*
-rule Depart:
-  [  ]
-  -->
-  [ PA($A,'1'+'1'+'1') ]
-*/
+  	[ !Secret(secret,skA), Out(<sign(h(secret),skA),A>) ]
 
 rule L_Argent:
   let mise = '1'
   in
-  [ PA(J, x + mise), !SK(sk,A) ]
-  -->
-  [ PA(J, x), Out(sign(mise, sk))]
+  [ !PA(sk, x + mise) ]
+  --[Money(sk,x)]->
+  [ !PM(sk, x), Out(<mise,sign(mise, sk)>)]
 
 rule Init:
-  [ In(sign(mise, skA)), !SK(skA,$A), In(sign(mise, skB)), !SK(skB,$B) ]
-  --[Neq(skA,skB),Start($A,$B)]->
+  [ In(<mise,sign(mise, skA)>), !SK(skA,$A), In(<mise,sign(mise, skB)>), !SK(skB,$B) ]
+  --[Neq(skA,skB),Start(skA,skB)]->
   [ BC(<mise,skA>, <mise,skB>) ]
 
 rule InitBC:
 [ BC(<mise,skA>, <mise,skB>) ]
 -->
-[ W1($A, mise), W1($B,mise) ]
-
-rule InitW:
-[ W1(J, mise)]
--->
-[ W('0',J,mise)]
-
-rule Win:
-[ W('0',$A,mise), W('0',$B,mise) ]
--->
-[ T1('0',$A,$B, mise+mise) ]
-
-/*rule envoiBC:
-[ m ]
--->
-[ BC(m) ]
-*/
-
+[ W('0',skA,skB, mise) ]
 /*
-rule Match:
-[ T1('0',A,B, mise), !Secret(secretA), !SK(skA), In(<sign(h(secret),skA),A>) ]
---[Eq(h(secretA), getMessage(revealingSign(h(secret),skA)))]->
-[ T2('0',A,B,secretA, mise) ]
+rule InitW:
+[ W1($A, mise), W1($B, mise)]
+-->
+[ W('0',$A,mise), W('0',$B, mise)]
 */
+rule Win:
+[ W('0',skA,skB,mise) ]
+-->
+[ T1('0',skA,skB, mise+mise) ]
+
 rule Match:
-[ T1('0',$A,$B, mise), !Secret(secretA), !SK(skA,$A), In(<h(secret),$A>) ]
+[ T1('0',skA,skB, mise), !Secret(secretA,skA), !SK(skA,$A), In(<h(secret),$A>) ]
 --[Eq(h(secretA), h(secret))]->
-[ T2('0',$A,$B,secretA, mise) ]
+[ T2('0',skA,skB,secretA, mise) ]
 
 rule GetMsg:
 [ In(<sign(h(secret),sk),J>), !SK(sk,J) ]
 -->
 [ Out(<h(secret), J>) ]
 
-/*
 rule Match2:
-[ T2('0',A,B,secretA, mise), !Secret(secretB), !SK(skB), In(<sign(h(secret),skB),B>) ]
---[Eq(h(secretB), getMessage(revealingSign(h(secret),skB)))]->
-[ T3('0',A,B,secretA, secretB, mise) ]
-*/
-rule Match2:
-[ T2('0',$A,$B,secretA, mise), !Secret(secretB), !SK(skB,$B), In(<h(secret),$B>) ]
+[ T2('0',skA,skB,secretA, mise), !Secret(secretB,skB), !SK(skB,$B), In(<h(secret),$B>) ]
 --[Eq(h(secretB), h(secret))]->
-[ T3('0',$A,$B,secretA, secretB, mise) ]
+[ T3('0',skA,skB,secretA, secretB, mise) ]
 
 rule Winner:
-[ T3('0',$A,$B,secretA, secretB, mise) ]
+[ T3('0',skA,skB,secretA, secretB, mise) ]
 -->
-[ W('epsilon', $A, mise) ]
+[ W2('epsilon', skA, mise) ]
 
 rule Winner2:
-[ T3('0',$A,$B,secretA, secretB, mise) ]
+[ T3('0',skA,skB,secretA, secretB, mise) ]
 -->
-[ W('epsilon', $B, mise) ]
+[ W2('epsilon', skB, mise) ]
 
 rule Fin:
-[ W('epsilon', J, mise), !SK(skJ,J), PA(sign(skJ,skJ),x)]
---[ Win(J) ]->
-[ PA(J, x+mise) ]
+[ W2('epsilon', skJ, mise), !PM(skJ,x)]
+--[ Win(skJ), Money(skJ,x+mise) ]->
+[ !PA(skJ, x+mise) ]
 
+rule updatePA:
+[ !PM(sk,x) ]
+-->
+[ !PA(sk,x) ]
 
 restriction Equality:
   "All x y #i. Eq(x,y) @#i ==> x = y"
@@ -116,7 +95,9 @@ lemma existe_Winner2:
 exists-trace
 "  Ex X Y #i #j. (Win(Y)@i & Start(X,Y)@j)" 
 
+lemma repartition:
+exists-trace
+"  Ex X Y #i #j #k. (Win(X)@i & Start(X,Y)@j & Money(X,'1'+'1'+'1'+'1')@i & Money(Y,'1'+'1')@k)" 
+
 end
-
-
 
