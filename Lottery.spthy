@@ -5,9 +5,9 @@ builtins: hashing, asymmetric-encryption, signing, multiset, revealing-signing
 
 // Creer une paire de clé
 rule Creer_pk:
-    [ Fr(sk) ]
-  -->
-    [ !SK(sk,$A), Out(pk(sk)), !PA(sk,'1'+'1'+'1') ]
+    [ Fr(skA), Fr(skB) ]
+    --[Once(), Monnaie(skA,'0'+'1'+'1'+'1',skB,'0'+'1'+'1'+'1','0', '0'+'1'+'1'+'1'+'1'+'1'+'1')]->
+    [ !SK(skA,$A), Out(pk(skA)), !SK(skB,$B), Out(pk(skB)), Monnaie(skA,'0'+'1'+'1'+'1',skB,'0'+'1'+'1'+'1','0', '0'+'1'+'1'+'1'+'1'+'1'+'1') ]
 
 // Créer le secret
 rule Creer_secret:
@@ -18,9 +18,9 @@ rule Creer_secret:
 rule L_Argent:
   let mise = '1'
   in
-  [ !PA(sk, x + mise) ]
-  --[Money(sk,x)]->
-  [ !PM(sk, x), Out(<mise,sign(mise, sk)>)]
+  [ Monnaie(skA,xA+mise,skB,xB+mise,e, t) ]
+  --[Monnaie(skA,xA,skB,xB,e+mise+mise, t), Once2()]->
+  [ Monnaie(skA,xA,skB,xB,e+mise+mise, t), Out(<mise,sign(mise, skA)>), Out(<mise,sign(mise, skB)>)]
 
 rule Init:
   [ In(<mise,sign(mise, skA)>), !SK(skA,$A), In(<mise,sign(mise, skB)>), !SK(skB,$B) ]
@@ -39,24 +39,14 @@ rule MatchAB:
 [ T3('0',skA,skB,secretA, secretB, mise) ]
 
 rule WinnerA:
-[ T3('0',skA,skB,secretA, secretB, mise) ]
--->
-[ W2('epsilon', skA, mise) ]
+[ T3('0',skA,skB,secretA, secretB, mise), Monnaie(skA,xA,skB,xB,e+mise, t) ]
+--[Win(skA), Money(skA,xA+mise), Monnaie(skA,xA+mise,skB,xB,e, t)]->
+[ Monnaie(skA,xA+mise,skB,xB,e, t) ]
 
 rule WinnerB:
-[ T3('0',skA,skB,secretA, secretB, mise) ]
--->
-[ W2('epsilon', skB, mise) ]
-
-rule Fin:
-[ W2('epsilon', skJ, mise), !PM(skJ,x)]
---[ Win(skJ), Money(skJ,x+mise) ]->
-[ !PA(skJ, x+mise) ]
-
-rule updatePA:
-[ !PM(sk,x) ]
--->
-[ !PA(sk,x) ]
+[ T3('0',skA,skB,secretA, secretB, mise), Monnaie(skA,xA,skB,xB,e+mise, t) ]
+--[Win(skB), Money(skB,xB+mise), Monnaie(skA,xA,skB,xB+mise,e, t)]->
+[ Monnaie(skA,xA,skB,xB+mise,e, t)]
 
 restriction Equality:
   "All x y #i. Eq(x,y) @#i ==> x = y"
@@ -66,6 +56,9 @@ restriction Equality:
 
 restriction Once:
   "All #i #j. Once()@#i & Once()@#j ==> #i = #j"
+
+restriction Once2:
+  "All #i #j. Once2()@#i & Once2()@#j ==> #i = #j"
 
 lemma executable:
 exists-trace
@@ -79,11 +72,14 @@ lemma existe_WinnerB:
 exists-trace
 "  Ex X Y #i #j. (Win(Y)@i & Start(X,Y)@j)" 
 
-lemma repartition:
+/*lemma repartition:
 exists-trace
 "  Ex X Y #i #j #k. (Win(X)@i & Start(X,Y)@j & Money(X,'1'+'1'+'1'+'1')@i & Money(Y,'1'+'1')@k)" 
+*/
 
-
+lemma repartition:
+"All skA xA skB xB e t #i. Monnaie(skA,xA,skB,xB,e,t)@#i ==> t+'0'+'0' = e+xA+xB"
 
 end
 
+/* rajouter une restriction sur xA => xa {0,..,6} */
