@@ -25,44 +25,25 @@ rule L_Argent:
 rule Init:
   [ In(<mise,sign(mise, skA)>), !SK(skA,$A), In(<mise,sign(mise, skB)>), !SK(skB,$B) ]
   --[Neq(skA,skB),Start(skA,skB)]->
-  [ BC(<mise,skA>, <mise,skB>) ]
+  [ T1('0',skA,skB, mise+mise) ]
 
-rule InitBC:
-[ BC(<mise,skA>, <mise,skB>) ]
--->
-[ W('0',skA,skB, mise) ]
-/*
-rule InitW:
-[ W1($A, mise), W1($B, mise)]
--->
-[ W('0',$A,mise), W('0',$B, mise)]
-*/
-rule Win:
-[ W('0',skA,skB,mise) ]
--->
-[ T1('0',skA,skB, mise+mise) ]
 
-rule Match:
-[ T1('0',skA,skB, mise), !Secret(secretA,skA), !SK(skA,$A), In(<h(secret),$A>) ]
---[Eq(h(secretA), h(secret))]->
+rule MatchA:
+[ T1('0',skA,skB, mise), !Secret(secretA,skA), !SK(skA,$A), In(<sign(h(secret),skA),$A>) ]
+--[Eq(verify(sign(h(secret),skA),h(secretA),pk(skA)),true)]->
 [ T2('0',skA,skB,secretA, mise) ]
 
-rule GetMsg:
-[ In(<sign(h(secret),sk),J>), !SK(sk,J) ]
--->
-[ Out(<h(secret), J>) ]
-
-rule Match2:
-[ T2('0',skA,skB,secretA, mise), !Secret(secretB,skB), !SK(skB,$B), In(<h(secret),$B>) ]
---[Eq(h(secretB), h(secret))]->
+rule MatchAB:
+[ T2('0',skA,skB,secretA, mise), !Secret(secretB,skB), !SK(skB,$B), In(<sign(h(secret),skB),$B>) ]
+--[Eq(verify(sign(h(secret),skB),h(secretB),pk(skB)),true)]->
 [ T3('0',skA,skB,secretA, secretB, mise) ]
 
-rule Winner:
+rule WinnerA:
 [ T3('0',skA,skB,secretA, secretB, mise) ]
 -->
 [ W2('epsilon', skA, mise) ]
 
-rule Winner2:
+rule WinnerB:
 [ T3('0',skA,skB,secretA, secretB, mise) ]
 -->
 [ W2('epsilon', skB, mise) ]
@@ -83,21 +64,26 @@ restriction Equality:
   restriction Inequality:
   "All x #i. Neq(x,x) @ #i ==> F"
 
+restriction Once:
+  "All #i #j. Once()@#i & Once()@#j ==> #i = #j"
+
 lemma executable:
 exists-trace
 " Ex J #i. Win(J) @ i "
 
-lemma existe_Winner:
+lemma existe_WinnerA:
 exists-trace
 "  Ex X Y #i #j. (Win(X)@i & Start(X,Y)@j)" 
 
-lemma existe_Winner2:
+lemma existe_WinnerB:
 exists-trace
 "  Ex X Y #i #j. (Win(Y)@i & Start(X,Y)@j)" 
 
 lemma repartition:
 exists-trace
 "  Ex X Y #i #j #k. (Win(X)@i & Start(X,Y)@j & Money(X,'1'+'1'+'1'+'1')@i & Money(Y,'1'+'1')@k)" 
+
+
 
 end
 
