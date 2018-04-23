@@ -3,30 +3,29 @@ begin
 
 builtins: hashing, asymmetric-encryption, signing, multiset, revealing-signing
 
-// Creer une paire de clé
+// Creer les paires de clés des joueurs
 rule Creer_pk:
     [ Fr(skA), Fr(skB) ]
-    --[Once(), Monnaie(skA,'0'+'1'+'1'+'1',skB,'0'+'1'+'1'+'1','0', '0'+'1'+'1'+'1'+'1'+'1'+'1')]->
-    [ !SK(skA,$A), Out(pk(skA)), !SK(skB,$B), Out(pk(skB)), Monnaie(skA,'0'+'1'+'1'+'1',skB,'0'+'1'+'1'+'1','0', '0'+'1'+'1'+'1'+'1'+'1'+'1') ]
+  --[Once(), Monnaie(<skA,'0'+'1'+'1'>,<skB, '0'+'1'+'1'>, '0','0'+'1'+'1'+'1'+'1')]->
+    [ !SK(skA,$A), Out(pk(skA)), Monnaie(<skA,'0'+'1'+'1'>,<skB, '0'+'1'+'1'>, '0','0'+'1'+'1'+'1'+'1'), !SK(skB,$B), Out(pk(skB)) ]
 
 // Créer le secret
 rule Creer_secret:
-	[ Fr(secret) , !SK(skA,A)]
+  [ Fr(secret) , !SK(skA,A)]
   --> 
-  	[ !Secret(secret,skA), Out(<sign(h(secret),skA),A>) ]
+    [ !Secret(secret,skA), Out(<sign(h(secret),skA),A>) ]
 
 rule L_Argent:
   let mise = '1'
   in
-  [ Monnaie(skA,xA+mise,skB,xB+mise,e, t) ]
-  --[Monnaie(skA,xA,skB,xB,e+mise+mise, t), Once2()]->
-  [ Monnaie(skA,xA,skB,xB,e+mise+mise, t), Out(<mise,sign(mise, skA)>), Out(<mise,sign(mise, skB)>)]
+  [ Monnaie(<skA, xA + mise>, <skB, xB + mise>, e, t) ]
+  --[Neq(skA,skB), Restrict2(xA+mise,xB+mise)]->
+  [ Monnaie(<sign(skA,skA), xA>, <sign(skB,skB), xB>, e+mise+mise,t), Out(<mise,sign(mise, skA)>), Out(<mise,sign(mise, skB)>)]
 
 rule Init:
   [ In(<mise,sign(mise, skA)>), !SK(skA,$A), In(<mise,sign(mise, skB)>), !SK(skB,$B) ]
   --[Neq(skA,skB),Start(skA,skB)]->
   [ T1('0',skA,skB, mise+mise) ]
-
 
 rule MatchA:
 [ T1('0',skA,skB, mise), !Secret(secretA,skA), !SK(skA,$A), In(<sign(h(secret),skA),$A>) ]
@@ -39,14 +38,20 @@ rule MatchAB:
 [ T3('0',skA,skB,secretA, secretB, mise) ]
 
 rule WinnerA:
-[ T3('0',skA,skB,secretA, secretB, mise), Monnaie(skA,xA,skB,xB,e+mise, t) ]
---[Win(skA), Money(skA,xA+mise), Monnaie(skA,xA+mise,skB,xB,e, t)]->
-[ Monnaie(skA,xA+mise,skB,xB,e, t) ]
+[ T3('0',skA,skB,secretA, secretB, mise), Monnaie(<sign(skA,skA),xA>, <sign(skB,skB), xB>, e+mise,t) ]
+--[Win(skA), Monnaie(<skA,xA+mise>, <skB, xB>, e, t), Restrict(xA+mise)]->
+[ Monnaie(<skA, xA+mise>,<skB, xB>, e, t) ]
 
 rule WinnerB:
-[ T3('0',skA,skB,secretA, secretB, mise), Monnaie(skA,xA,skB,xB,e+mise, t) ]
---[Win(skB), Money(skB,xB+mise), Monnaie(skA,xA,skB,xB+mise,e, t)]->
-[ Monnaie(skA,xA,skB,xB+mise,e, t)]
+[ T3('0',skA,skB,secretA, secretB, mise), Monnaie(<sign(skA,skA), xA>,<sign(skB,skB),xB>, e+mise, t) ]
+--[Win(skB), Monnaie(<skA,xA>, <skB, xB+mise>, e, t), Restrict(xB+mise)]->
+[ Monnaie(<skA,xA>, <skB, xB+mise>, e, t) ]
+
+restriction Restrict:
+"All x #i. Restrict(x) @#i ==> x='0' | x='0'+'1' | x='0'+'1'+'1' | x='0'+'1'+'1'+'1' | x='0'+'1'+'1'+'1'+'1' "
+
+restriction Restrict2:
+"All x y #i. Restrict2(x,y) @#i ==> x+y='0'+'1'+'1'+'1'+'1'+'0'"
 
 restriction Equality:
   "All x y #i. Eq(x,y) @#i ==> x = y"
@@ -56,9 +61,6 @@ restriction Equality:
 
 restriction Once:
   "All #i #j. Once()@#i & Once()@#j ==> #i = #j"
-
-restriction Once2:
-  "All #i #j. Once2()@#i & Once2()@#j ==> #i = #j"
 
 lemma executable:
 exists-trace
@@ -72,14 +74,11 @@ lemma existe_WinnerB:
 exists-trace
 "  Ex X Y #i #j. (Win(Y)@i & Start(X,Y)@j)" 
 
-/*lemma repartition:
-exists-trace
-"  Ex X Y #i #j #k. (Win(X)@i & Start(X,Y)@j & Money(X,'1'+'1'+'1'+'1')@i & Money(Y,'1'+'1')@k)" 
-*/
-
 lemma repartition:
-"All skA xA skB xB e t #i. Monnaie(skA,xA,skB,xB,e,t)@#i ==> t+'0'+'0' = e+xA+xB"
+"All skA xA skB xB e t #i. Monnaie(<skA,xA>,<skB,xB>,e,t)@#i ==> t+'0'+'0' = e+xA+xB"
+
+lemma un_seul_gagnant:
+"All skA skB #i #j. Win(skA)@i & Win(skB)@j & not(skA=skB) ==> not(#i = #j)"
 
 end
 
-/* rajouter une restriction sur xA => xa {0,..,6} */
