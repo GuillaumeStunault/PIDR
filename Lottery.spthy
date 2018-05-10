@@ -6,8 +6,8 @@ builtins: hashing, asymmetric-encryption, signing, multiset, revealing-signing
 // Creer les paires de clés des joueurs
 rule Creer_pk:
     [ Fr(skA), Fr(skB) ]
-  --[Once(), Monnaie(<skA,'0'+'1'+'1'>,<skB, '0'+'1'+'1'>, '0','0'+'1'+'1'+'1'+'1')]->
-    [ !SK(skA,$A), Out(pk(skA)), Monnaie(<skA,'0'+'1'+'1'>,<skB, '0'+'1'+'1'>, '0','0'+'1'+'1'+'1'+'1'), !SK(skB,$B), Out(pk(skB)) ]
+  --[Once(), Monnaie(<skA,'0'+'1'>,<skB, '0'+'1'>, '0','0'+'1'+'1')]->
+    [ !SK(skA,$A), Out(pk(skA)), Monnaie(<skA,'0'+'1'>,<skB, '0'+'1'>, '0','0'+'1'+'1'), !SK(skB,$B), Out(pk(skB)) ]
 
 // Créer le secret
 rule Creer_secret:
@@ -48,10 +48,10 @@ rule WinnerB:
 [ Monnaie(<skA,xA>, <skB, xB+mise>, e, t) ]
 
 restriction Restrict:
-"All x #i. Restrict(x) @#i ==> x='0' | x='0'+'1' | x='0'+'1'+'1' | x='0'+'1'+'1'+'1' | x='0'+'1'+'1'+'1'+'1' "
+"All x #i. Restrict(x) @#i ==> x='0' | x='0'+'1' | x='0'+'1'+'1'  "
 
 restriction Restrict2:
-"All x y #i. Restrict2(x,y) @#i ==> x+y='0'+'1'+'1'+'1'+'1'+'0'"
+"All x y #i. Restrict2(x,y) @#i ==> x+y='0'+'1'+'1'+'0'"
 
 restriction Equality:
   "All x y #i. Eq(x,y) @#i ==> x = y"
@@ -77,8 +77,8 @@ exists-trace
 lemma repartition:
 "All skA xA skB xB e t #i. Monnaie(<skA,xA>,<skB,xB>,e,t)@#i ==> t+'0'+'0' = e+xA+xB"
 
-lemma un_seul_gagnant:
-"All skA skB #i #j. Win(skA)@i & Win(skB)@j & not(skA=skB) ==> not(#i = #j)"
+lemma un_seul_gagnant: // limité à 1 execution
+"All skA skB #i #j. Win(skA)@i & Win(skB)@j & not(skA=skB) ==> F"
 
 end
 
