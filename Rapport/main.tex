@@ -10,6 +10,8 @@
 \usepackage{algorithmicx}
 \usepackage{algorithm}
 \usepackage{cite}
+\usepackage{amsmath}
+\newtheorem{theo}{Propriété} 
 \usepackage[caption=false,font=footnotesize]{subfig}
 \usepackage[left = 3.5cm, right = 3.5cm, top = 4cm, bottom = 4cm]{geometry}
 
@@ -19,12 +21,8 @@
 \author{\IEEEauthorblockN{Guillaume Stunault}
 \IEEEauthorblockA{Etudiant \\ Telecom Nancy}
 \and \IEEEauthorblockN{Lucas Vignali} 
-\IEEEauthorblockA{Etudiant \\ Telecom Nancy}
-\and 
-\IEEEauthorblockN{Jannik Dreier}
-\IEEEauthorblockA{Maître de Conférences\\ Université de Lorraine\\ Enseignant \\ Telecom Nancy \\ Chercheur équipe PESTO \\ LORIA} 
-\and \IEEEauthorblockN{Steve Kremer}
-\IEEEauthorblockA{Chercheur équipe PESTO \\ LORIA} }
+\IEEEauthorblockA{Etudiant \\ Telecom Nancy} }
+
 
 \date{\today}
 
@@ -38,31 +36,38 @@ Nous nous sommes donc intéressés à un protocole de loterie Bitcoin \cite{955}
 \end{abstract}
 \section{Introduction}
 
-Pour notre projet de PIDR nous avions comme sujet : \textbf{Vérification des « smart contracts » sur la blockchain}. Ce sujet nous a été proposé par M. Jannik DREIER, membre du LORIA et de l'équipe PESTO, accompagné de M. Steve Kremer. Suite à l'essor des applications liées à la blockchain et principalement celle du Bitcoin, des règles de sécurité comme les "Smart Contracts" doivent être mises en oeuvre pour la sûreté de ces protocoles.  Pour une loterie, il faut s'assurer qu'aucun participant ayant signé le contrat ne se retrouve sans paiement car l'exécution du contrat est automatique. Le but de ce PIDR a donc été de modéliser un système de smart contract. Pour cela nous avons utilisé un logiciel créé par l'équipe PESTO du LORIA : \textbf{Tamarin}\cite{tamarin}. Sur ce logiciel nous avons modélisé un protocole de loterie et vérifié certaines propriétés de sûreté (qu'une exécution incorrecte est impossible).
+Pour notre projet de PIDR nous avions comme sujet : \textbf{Vérification des « smart contracts » sur la blockchain}. Ce sujet nous a été proposé par M. Jannik DREIER, membre du LORIA et de l'équipe PESTO, accompagné de M. Steve Kremer. \\Suite à l'essor des applications liées à la blockchain et principalement celle du Bitcoin, des règles de sécurité comme les "Smart Contracts" doivent être mises en oeuvre pour la sûreté de ces protocoles.  Pour une loterie, il faut s'assurer qu'aucun participant ayant signé le contrat ne se retrouve sans paiement car l'exécution du contrat est automatique. 
 
+Le but de ce PIDR a donc été de modéliser un système de smart contract. Pour cela nous avons utilisé un logiciel créé par l'équipe PESTO du LORIA : \textbf{Tamarin}\cite{tamarin}. Sur ce logiciel nous avons modélisé un protocole de loterie et vérifié certaines \textbf{propriétés de sûreté} (qu'une exécution incorrecte est impossible).
+\newpage
 \section{État de l'art}
 \subsection{La Blockchain}
 La blockchain est une technologie de stockage et de transmission d’informations, transparente, sécurisée, et fonctionnant sans organe central de contrôle.
 
-Par extension, une blockchain constitue une base de données qui contient l’historique de tous les échanges effectués entre ses utilisateurs depuis sa création. Ces échanges sont enregistrés sous forme de blocs, qui mis bout à bout forment une chaîne, d'où le terme blockchain. Cette base de données est sécurisée et distribuée : elle est partagée par ses différents utilisateurs, sans intermédiaire, ce qui permet à chacun de vérifier la validité de la chaîne. \cite{bcfr} \\
-\begin{figure}
+Une blockchain constitue une base de données qui contient l’historique de tous les échanges effectués entre ses utilisateurs depuis sa création. Ces échanges sont enregistrés sous forme de blocs, qui mis bout à bout forment une chaîne, d'où le terme blockchain. \\Cette base de données est sécurisée et distribuée : elle est partagée par ses différents utilisateurs, sans intermédiaire, ce qui permet à chacun de vérifier la validité de la chaîne. \cite{bcfr} 
+
+\begin{figure}[!h]
     \centering
     \includegraphics[scale=0.55]{blck-schema.png}
-    \caption{Représentation d'une blockchain}
+    \caption{\textit{Représentation d'une blockchain \cite{bcfr}}}
     \label{fig:blockchain}
 \end{figure}
+\vspace{0.2cm}
 
 L’intérêt de la blockchain réside dans l’aspect décentralisé de la base de données qui est stockée sur les différents serveurs des utilisateurs et fonctionne sans intermédiaire ce qui limite les frais d’infrastructure. Cette base de données que beaucoup comparent à un grand livre comptable – public et partagé – contient un historique infalsifiable des transactions qui est mis à jour en temps réel par les utilisateurs. Les utilisateurs valident chaque transaction et vérifient la cohérence de celle-ci grâce au registre. \\
 
 \textbf{Pourquoi infalsifiable ? } \\
-Distribuée, et non centralisée, la base de données est aussi doublement sécurisée. D'abord par un système de cryptographie dite "asymétrique". Cela signifie simplement qu'il faut deux clés différentes (une privée, une publique) pour soumettre une transaction dans la blockchain. Ensuite, Chaque bloc est validé par les noeuds du réseau appelés les “mineurs”. Les "mineurs" chargés de vérifier la validité des transactions bloc par bloc sont des particuliers, rémunérés pour mettre à disposition la puissance de calcul de leurs processeurs en résolvant des fonctions de hachage cryptographique. Dans la blockchain du Bitcoin, cette technique s'appelle le "Proof-of-Work" (preuve de travail). \cite{7x7} \\
-Ainsi pour manipuler la blockchain, il faudrait pouvoir falsifier plus de la moité des noeuds du système, ce qui correspond à pirater des milliers d'utilisateurs au même moment. Techniquement, il s’agit d’une prouesse impossible. \\
-\begin{subfigure}
+Distribuée, et non centralisée, la base de données est aussi doublement sécurisée. D'abord par un système de cryptographie dite "asymétrique". Cela signifie simplement qu'il faut deux clés différentes (une privée, une publique) pour soumettre une transaction dans la blockchain. 
+
+Ensuite, chaque bloc est validé par les noeuds du réseau appelés les “mineurs”. Les "mineurs" chargés de vérifier la validité des transactions bloc par bloc sont des particuliers, rémunérés pour mettre à disposition la puissance de calcul de leurs processeurs en résolvant des fonctions de hachage cryptographique. \\Dans la blockchain du Bitcoin, cette technique s'appelle le "Proof-of-Work" (preuve de travail). \cite{7x7} \\
+Ainsi pour manipuler la blockchain, il faudrait pouvoir falsifier plus de la moité des noeuds du système, ce qui correspond à pirater des milliers d'utilisateurs au même moment. Techniquement, il s’agit d’une prouesse impossible. \vspace{0.15cm}
+
+\begin{figure}[!h]
     \centering
     \includegraphics[scale=0.3]{blck-fonctionnement.png}
-    \caption{Fonctionnement de la blockchain}
+    \caption{\textit{Fonctionnement de la blockchain} \cite{bcfr}}
     \label{fig:blck-fonctionnement}
-\end{subfigure}
+\end{figure}
 \vspace{0.3cm}\\
 \textbf{Le potentiel de la blockchain} \cite{bcfr}\\
 
@@ -77,20 +82,23 @@ Bien que souvent associé au Bitcoin et autres cryptomonnaies, le caractère dé
 
 \subsection{Le Bitcoin}
 
-Le Bitcoin est une monnaie virtuelle mais aussi un système de paiement pair à pair. C'est la première monnaie électronique décentralisé. Ce type de monnaie possède différent avantages : 
+Le Bitcoin est une monnaie virtuelle mais aussi un système de paiement pair à pair. C'est la première monnaie électronique décentralisé. Ce type de monnaie possède différents avantages : 
 \begin{itemize}
     \item Échange de particulier à particulier ce qui implique des frais inférieurs aux banques
     \item Utilisable dans tous les pays
     \item Les comptes ne peuvent pas être gelés
     \item Pas de condition
 \end{itemize}
+\vspace{0.3cm}
 
-Les bitcoins peuvent être générés par toute personne possédant un ordinateur et faisant tourner un logiciel appelé "mineur de bitcoin". Cette création de bitcoin requiert de de travailler sur chaque bloc de transaction. Ceci est ajusté par le réseau pour que la création des bitcoin soit prédictible et limitée. Enfin les bitcoin sont stockés dans des porte-monnaie électroniques. Chaque transaction est vérifiée puis stockée sur le réseau.
+Les bitcoins peuvent être générés par toute personne possédant un ordinateur et faisant tourner un logiciel appelé "mineur de bitcoin". \\Cette création de bitcoin requiert de de travailler sur chaque bloc de transaction. Ceci est ajusté par le réseau pour que la création des bitcoins soit prédictible et limitée. Enfin les bitcoins sont stockés dans des porte-monnaie électroniques. Chaque transaction est vérifiée puis stockée sur le réseau.
 
+\vspace{0.3cm}
 \subsection{Les smart contracts}
 Les \textbf{smarts contracts} sont des programmes autonomes qui une fois lancés exécutent automatiquement des conditions définies préalablement et inscrites sur la blockchain. Par exemple c'est ce qu'il se passe lorsque l'on se souscrit à une assurance et que en cas de problème on est remboursé sans avoir à faire quelque chose.
 L'avantage de ce type de contract repose sur le fait qu'ils sont dans la blockchain, et donc qu'il ne sont pas modifiables. Dans le cas où ils ne seraient pas dans la blockchain, alors ils seraient modifiables.
 
+\vspace{0.3cm}
 \subsection{Notions cryptographiques nécessaires à la compréhension du protocole}
 
 \subsubsection{Cryptographie asymétrique}
@@ -106,26 +114,29 @@ Dans un cryptosystème asymétrique (ou cryptosystème à clés publiques), les 
 Ainsi, dans un système de chiffrement à clé publique, les utilisateurs choisissent une clé aléatoire qu'ils sont seuls à connaître (il s'agit de la clé privée). A partir de cette clé, ils déduisent chacun automatiquement une clé publique. Les utilisateurs peuvent s'échanger cette clé publique au travers d'un canal non sécurisé.
 
 Lorsqu'un utilisateur désire envoyer un message à un autre utilisateur, il lui suffit de chiffrer le message à envoyer au moyen de la clé publique du destinataire. Ce dernier sera en mesure de déchiffrer le message à l'aide de sa clé privée (qu'il est le seul à connaître). \cite{ccmasym}
-\begin{subfigure}
+
+\begin{figure}[!h]
     \centering
     \includegraphics[scale=0.7]{asym.PNG}
-    \caption{Envoi de messages par chiffrement asymétrique}
+    \caption{\textit{Envoi de messages par chiffrement asymétrique} \cite{ccmasym}}
     \label{fig:asym}
-\end{subfigure}
+\end{figure}
 
-\vspace{0.3cm}
 Ce chiffrement permet de s'assurer de \textbf{l'authenticité de l'expéditeur}. \cite{wikiasym}\\
 \subsubsection{Les fonctions de hachage cryptographique}
-Une fonction de hachage cryptographique est une fonction qui, à une donnée de taille arbitraire, associe une image de taille fixe. Une propriété essentielle est qu'elle est pratiquement impossible à inverser, c'est-à-dire que si l'image d'une donnée par la fonction se calcule très efficacement, le calcul inverse d'une donnée d'entrée ayant pour image une certaine valeur se révèle impossible sur le plan pratique. Pour cette raison, on dit d'une telle fonction qu'elle est à sens unique.\cite{wikihash, ryxhash}. Les fonctions de hachage sont utilisées pour garantir \textbf{l'intégrité} d'une donnée. Si un message est corrompu, son haché ne sera plus le même. \cite{igmsign}\\
-Comme une fonction de hachage transforme un message de taille arbitraire en message de taille fixe. Il y a donc un problème : comme il y a plus de messages possibles que de hachés possibles, plusieurs messages peuvent donc avoir le même haché. Cela s'appelle une collision. \cite{ryxhash, cryptohash}\\
+Une fonction de hachage cryptographique est une fonction qui, à une donnée de taille arbitraire, associe une image de taille fixe. \\Une propriété essentielle est qu'elle est pratiquement impossible à inverser, c'est-à-dire que si l'image d'une donnée par la fonction se calcule très efficacement, le calcul inverse d'une donnée d'entrée ayant pour image une certaine valeur se révèle impossible sur le plan pratique. Pour cette raison, on dit d'une telle fonction qu'elle est à sens unique.\cite{wikihash, ryxhash}.
+
+Les fonctions de hachage sont utilisées pour garantir \textbf{l'intégrité} d'une donnée. Si un message est corrompu, son haché ne sera plus le même. \cite{igmsign}\\
+Une fonction de hachage transforme un message de taille arbitraire en message de taille fixe. Il y a donc un problème : comme il y a plus de messages possibles que de hachés possibles, plusieurs messages peuvent donc avoir le même haché. Cela s'appelle une collision. \cite{ryxhash, cryptohash}\\
 Pour une fonction de hachage F, on demande qu'elle soit :
 \begin{itemize}
     \item résistante au calcul de préimage (étant donné y difficile de trouver y = F(x))
     \item résistante au calcul de seconde préimage (étant donné x, difficile de trouver x', tel que F(x) = F(x'))
     \item résistante aux collisions (difficile de trouver x et x', tel que F(x) = F(x'))
 \end{itemize}
+\vspace{0.2cm}
 Il est aujourd'hui très difficile de trouver des collisions sur les fonctions de hachage actuelles (SHA2-SHA3). \\
-Les fonctions de hachage dans Tamarin sont résistantes aux 3 propriétés ci-dessus. \\
+Les fonctions de hachage que nous utilisons dans Tamarin sont résistantes aux 3 propriétés ci-dessus. \\
 
 \subsubsection{Signature}
 La signature d'un document utilise à la fois la cryptographie asymétrique et les fonctions de hachage. C'est en effet par l'association de ces deux techniques que nous pouvons obtenir les 5 caractéristiques d'une signature (authentique, infalsifiable, non réutilisable, inaltérable, irrévocable). \cite{igmsign}
@@ -144,8 +155,54 @@ Si Alice souhaite signer un document et l'envoyer à Bob : \\
         C'est Alice qui a envoyé le document, \\
         Le document n'a pas été modifié depuis qu'Alice l'a signé.
 \cite{igmsign}
+
+La signature numérique garantit \textbf{l'identité} du signataire, \textbf{l'intégrité} du document et \textbf{la non répudiation} du document signé par le signataire.
+
+Dans Tamarin, il existe plusieurs fonctions qui utilisent la signature :
+\begin{itemize}
+    \item sign : Cette fonction permet de signer un message à partir d'une clé secrète
+    \item verifySign : Cette fonction permet de vérifier l'identité du signataire du message à partir de sa clé publique
+    \item revealingSign : Cette fonction permet de retirer la signature d'un message à partir de la clé secrète du signataire
+\end{itemize}
 \subsection{Tamarin}
 
+Tamarin est un logiciel collaboratif pour l'analyse symbolic et l'analyse de protocoles de sécuritées. Ce logiciel permet donc de modélisé des protocoles pour vérifier leur éxécution. L'ecriture de protocole dans ce logiciel se décompose en plusieurs étape. Tout d'abord on peut utiliser des fonctions déjà existantes par l'intermediaire de built-in fonctions~\ref{B-I}. Ces built-in permettent par exemple d'intégrer des fonctions de hashage. \\
+
+\begin{center}
+\begin{figure}[!h]
+\centering
+\includegraphics[scale=0.6]{BuiltIn.JPG}
+\caption{Built-In}
+\label{B-I}
+\end{figure}
+\end{center}
+
+Ensuite il faut créer les règles. Les règles opèrent sur l'état du système exprimé sous la forme d'un multiensemble de \textbf{faits}. Les faits sont en fait des prédicats contenant les informations d'états. Une fois toutes les règles, décrivant le fonctionnement du protocole, écrites on peut passer à l'écriture des propriétées. \\ 
+En effet, il faut ensuite écrire les propriétées permettant de vérifier la bonne exécution du protocole. Pour cela il faut trouver et écrire des règles de sécurité principalement. Par exemple nous avons écrit une règle vérifiant que la somme de Bitcoin en jeu dans notre protocole est constante, il n'y a pas d'argent ajouté ou perdu au cours d'une partie. Ces proprétés s'écrivent sous forme de lemme. Par exemple pour la propriété décrite ci-dessous, il faut regarder sur chaque trace du protocole si la somme des porte-monnaies des joueurs est bien égale à la totalité des gains mis en jeu au départ. Nous avons au final 5 lemmes détaillés dans la partie \ref{sec:sec-5}. \\
+
+\subsubsection{Création d'une règle} 
+Pour créer une règle il faut tout d'abord lui donner un nom, elle se déclare tout simplement par : \textbf{rule Nom\_Règle}. Ensuite, une règle contient 3 parties : 
+\begin{itemize}
+    \item Les entrées
+    \item Les sorties
+    \item Les "actions facts" \\
+\end{itemize}
+
+Les entrées correspondent tout simplement aux conditions d'entrée. Si on a cette entrée alors on applique la règle. La sortie détermine ce qui ressort de la règle. Enfin il y a les "actions facts", ils ressemblent aux faits mais contrairement à eux ils n'apparaissent que sur la trace. Ce sont les "actions facts" qui permettent de vérifier les lemmes. \\
+Finalmement une règle s'écrit sous la forme : \\
+\textbf{rule Nom\_Règle : }\\
+\textbf{ [ Entrées ]}\\
+\textbf{ --[Action facts]->}\\
+\textbf{ [ Sorties ]}\\
+
+\subsubsection{Création d'un lemme} 
+Comme nous l'avons dit ci-dessus, pour vérifier les propriétés du protocole il faut créer des lemmes. Tout d'abord il faut déclarer les lemmes comme les règles : \textbf{rule Nom\_Lemme}.\\
+Ensuite un lemme est là pour vérifier est présente ou non durant l'exécution du protocole. Pour cela il faut parcourir les traces lors de l'exécution. Par exemple on peut regarder si à la fin on a bien un gagnat par le lemme suivant :\\
+\textbf{lemme Nom\_Lemme : }\\
+\textbf{exists-trace}\\
+\textbf{" Ex J #i. Win(J) @ i "}
+
+\newpage
 \section{Le protocole de loterie}
 Nous allons analysé ce protocole de smart contract qui implémente une loterie Bitcoin. \cite{955}
 Ce protocole garantit :
@@ -155,13 +212,12 @@ présence d'adversaires qui jouent contre
 \item Si tous les joueurs sont honnêtes, le protocole simule une loterie ordinaire : 1 joueur remporte les mises des autres joueurs 
 \end{itemize}
 Le protocole utilise un arbre de tournoi : chaque manche le gagnant remporte la mise de l'adversaire \\
-\\ \\
-\begin{subfigure}
+\begin{figure}[!h]
     \centering
-    \includegraphics[scale=0.4]{arbre-tournoi.png}
-    \caption{Protocole pour 4 joueurs avec mise de départ : 1 Bitcoin}
+    \includegraphics[scale=0.35]{arbre-tournoi.png}
+    \caption{\textit{Protocole pour 4 joueurs avec mise de départ : 1 Bitcoin}}
     \label{fig:my_label}
-\end{subfigure}
+\end{figure}
 \vspace{0.3cm}\\
 Initialisation : \\
 \begin{itemize}
@@ -191,9 +247,13 @@ Mise : \\
 
 \section{Protocole réalisé}
 Nous avons simplifié le protocole au maximum pour tester ses divers propriétés de sécurité. \\
-Nous prenons désormais uniquement 2 joueurs A et B, et une seule manche de match. \\
-La mise vaut pour le moment : 1 bitcoin \\
-De plus, pour modéliser la blockchain, nous considérons les traces de Tamarin. En effet, la blockchain rend les transactions enregistrées consultables à chaque moment tout comme les traces de Tamarin.
+Nous prenons désormais uniquement \textbf{2 joueurs} A et B, et une seule manche de match. \\
+La mise vaut pour le moment : \textbf{1 bitcoin} \\
+Nous définissons en brut la somme que contient les porte-monnaie des 2 joueurs (\textbf{3 bitcoins}). 
+
+De plus, pour modéliser la blockchain, nous considérons \textbf{les traces} de Tamarin. En effet, la blockchain rend les transactions enregistrées consultables à chaque moment tout comme les traces de Tamarin.
+
+Tamarin peut donc être considéré comme une \textbf{blockchain}.
 
 
 \begin{itemize}
@@ -207,62 +267,133 @@ De plus, pour modéliser la blockchain, nous considérons les traces de Tamarin.
     \item Lorsque la blockchain possède les 2 hashs, elle peut déterminer aléatoirement un gagnant entre A et B.
     \item La blockchain ajoute les 2 Bitcoins au porte-monnaie du gagnant.
 \end{itemize}
+\vspace{0.2cm}
+Normalement, la blockchain est censée déterminer un gagnant avec une fonction sur la parité des secrets (processus qui est défini aléatoire et non truquable). \\Pour modéliser cela sur Tamarin, nous avons crée 2 règles identiques de victoire : une avec A, une avec B. Tamarin choisit alors aléatoirement de manière disjointe une de ces 2 règles.\\
 
-Normalement, la blockchain est censé déterminer un gagnant avec une fonction sur la parité des secrets (processus qui est défini aléatoire et non truquable). Pour modéliser cela sur Tamarin, nous avons crée 2 règles identiques de victoire : une avec A, une avec B. Et Tamarin choisit aléatoirement une de ces 2 règles.
+On identifie chaque joueur de façon unique dans les traces du protocole par sa \textbf{clé secrète}. Cela permet de s'assurer que le joueur qui joue et qui peut remporter la mise, est l'un des joueurs qui a déposé l'argent.\\
+Voilà les règles que nous avons créés dans Tamarin : 
+\begin{itemize}
+    \item CreerPK : Cette règle permet à chaque joueur de créer une clé publique et une clé secrète.
+    \item CreerSecret : Cette règle permet à un joueur de créer un secret, et de l'envoyer signé sur le réseau.
+    \item LArgent : Cette règle retire à chaque joueur la mise. Le joueur signe ensuite sa mise, et l'envoie sur le réseau.
+    \item Init : Lorsque le protocole a reçu toutes les signatures (ici uniquement 2), il crée une règle MatchA entre ces 2 joueurs.
+    \item MatchA : Cela signifie que c'est au tour de A de révéler son secret. La blockchain vérifie que le secret que A révèle est bien celui qu'il a signé et envoyé sur le réseau. Ensuite, une règle MatchAB est créée.
+    \item MatchAB : C'est au tour de B de révéler son secret. La blockchain effectue la même vérification que pour A. Ensuite, la blockchain crée aléatoirement, une règle WinnerA ou WinnerB.
+    \item WinnerA/WinnerB : Le joueur récupère dans son porte-monnaie la mise en jeu.
+\end{itemize}
+\vspace{0.3cm}
 
+Ainsi, contrairement au protocole original \cite{955} qui prend en compte le temps passé. C'est à dire, que si un joueur ne joue pas ou reste bloqué trop longtemps dans une règle, alors il est considéré \textbf{perdant}. Notre protocole sur Tamarin peut rester bloquer indéfiniment dans une règle si le joueur refuse de jouer.
+
+En effet, gérer le temps dans Tamarin était quelque chose de vraiment difficile. 
+\newpage
 \section{Propriétés à prouver}
-Nous avons décidé, pour vérifier le bon fonctionnement du protocole d'implémenter des propriétés simples. Nous avons donc modéliser 3 propriétées :
+\label{sec:sec-5}
+Nous avons décidé, pour vérifier le bon fonctionnement du protocole d'implémenter des propriétés simples. Nous avons donc modéliser 3 propriétés :
 \begin{itemize}
     \item Il existe une exécution normale du protocole
     \item A la fin, le porte-monnaie de l'un contient 4 bitcoins, et celui du perdant 2 bitcoins
     \item Il y a un seul gagnant à la fin, qui peut être le joueur A ou le joueur B \\
 \end{itemize}
 Ces propriétés étaient en partie formulée dans la documentation du protocole.
-Chaque preuve de ses propriétées se décrit sous forme de lemme. Par exemple pour vérifier que le joueur A ou le joueur B peut gagner il faut regarder si il existe une version de l'exécution du protocole où à la fin on a WinnerA ou WinnerB, les fonctions définissant le gagnant.
+Chaque preuve de ses propriétés se décrit sous forme de lemme. Par exemple pour vérifier que le joueur A ou le joueur B peut gagner il faut regarder si il existe une version de l'exécution (trace) du protocole où à la fin on a WinnerA ou WinnerB, les fonctions définissant le gagnant.\\
 
-Pour vérifier que la somme d'argent en jeu est juste pendant toute l'exécution du contrat, nous avons ajouté un fait Monnaie qui contient le porte-monnaie du joueur A, le porte-monnaie du joueur B, la somme mise en jeu et le total 
+Pour montrer que le choix de Tamarain est bien aléatoire. On veut prouver qu'il existe bien au moins une trace où A gagne, et une où B gagne : 
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.62]{winnerA.png}
+    \caption{\textit{Trace où A remporte le match}}
+    \label{fig:winnerA}
+\end{figure}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.62]{winnerB.png}
+    \caption{\textit{Trace où B remporte le match}}
+    \label{fig:winnerB}
+\end{figure}
 
-\section{Ouverture}
-Pour la suite nous avons plusieurs possibilité. Nous avons modéliser des propriétées simples pour nous permettre de vérifier le bon déroulement du protocole. Cependant il y a plusieurs modification que l'on pourrait faire. Tout d'abord, nous avons modéliser le protocole avec seulement 2 joueurs, le but étant de le modéliser pour N joueurs. Dans ce protocole nous avons aussi défini deux règles WinnerA et WinnerB définissant le gagnant, A ou B. Ces règles ne correspondent pas exactement à celle explicité dans le protocole de départ. En effet dans la documentation du protocole il est expliqué que le gagnant est définie à partir de la parité des secrets. Ce type de règle étant difficilement implémentable en Tamarin, nous avons décidé de réaliser une règle plus simple qui choisi A ou B comme gagnant
 
-Nous aurions pû également nous intéresser à vérifier des propriétés de \textit{liveness} (la propriété sera vraie après une certaine étape de l'exécution) \cite{vivacite}.
-Par exemple, garantir qu'un joueur qui quitte la partie ne récupérera son argent qu'avant Init.
+A possède la clé secrète ~n, B possède la clé secrète ~n.1. \\On remarque bien que les 2 règles WinnerA et WinnerB sont utilisées. \\Et que c'est bien A qui gagne le match dans WinnerA et B qui gagne dans WinnerB. 
+
+\vspace{0.2cm}
+Nous avons également choisi de prouver des propriétés qui s'appliquent pour toutes les traces de l'exécution.
+\newpage
+\vspace{0.3cm}\\
+\textbf{Un seul gagnant} 
+
+On cherche à montrer que 2 joueurs ne peuvent pas gagner en même temps. \\
+Pour cela, nous avons ajouté un fait Win(sk) qui contient la clé secrète du gagnant dans chacune des règles WinnerA/WinnerB.
+\vspace{0.2cm}
+\begin{theo}
+\textbf{All skA skB #i #j. Win(skA)@i & Win(skB)@j & not(skA=skB) ==> F}
+\end{theo}
+\vspace{0.3cm}
+Cela signifie que si on se limite à une exécution du protocole : c'est impossible d'avoir 2 clés secrètes skA, skB différentes, et 2 faits Win(skA) au moment i, Win(skB) au moment j.
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.62]{ungagnant.png}
+    \caption{\textit{Somme des porte-monnaie à l'intialisation}}
+    \label{fig:my_label}
+\end{figure}\\
+
+\textbf{Répartition correcte de l'argent sur chaque trace} 
+
+Pour vérifier que la somme d'argent en jeu est juste pendant toute l'exécution du contrat, nous avons ajouté un fait Monnaie qui contient le porte-monnaie du joueur A, le porte-monnaie du joueur B, la somme mise en jeu et le total : Monnaie(<skA, xA>, <skB, xB>, e, t) avec skA, skB les clés secrètes de A et B, xA, xB les porte-monnaie de A et B. \\
+
+Ce fait est situé dans chaque trace où l'argent en jeu est modifiée (à l'initialisation, lorsque les mises sont données, et lorsque le gagnant récupère la somme). On vérifie pour chacune des traces si on garde la relation : \textbf{xA + xB + e = t}.\\
+
+Nous initialisons l'argent de départ lors de la création des clés secrètes. Nous avons donc choisi de rendre la règle CreerPk \textbf{unique}. \\Ainsi, chaque joueur ne possédera qu'un seul porte-monnaie et une clé unique pendant toute la durée de la loterie.\\
+
+Le protocole que nous avons écrit ne limite pas la loterie à une exécution : un joueur qui gagne peut rejouer s'il le veut. \\
+Nous avons donc défini l'argent de départ des 2 joueurs à 1 bitcoin pour se limiter à une seule exécution.
+    
+    \begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.62]{Init.png}
+    \caption{\textit{Somme des porte-monnaie à l'intialisation}}
+    \label{fig:my_label}
+\end{figure}
+
+Sur cette exécution, A remporte la loterie.
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.55]{fin.png}
+    \caption{\textit{Somme des porte-monnaie après la victoire de A}}
+    \label{fig:my_label}
+\end{figure}
+
+On remarque que A possède désormais 2 bitcoins, B en possède 0, il n'y a plus d'argent en jeu et la somme d'argent totale est correcte (2 + 0 + 0 = 2). 
+
+La propriété est prouvée automatiquement par Tamarin pour chaque trace. 
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.65]{repartition.png}
+    \caption{\textit{Répartition correcte de l'argent sur chaque trace}}
+    \label{fig:my_label}
+\end{figure}
+
 
 
 \section{Conclusion}
+Finalement, nous avons réussi à modéliser une exécution du protocole en y intégrant des proprétées simples à modéliser. Ce projet était une véritable découverte du monde de la recherche et nous a permis d'apprendre de nouvelles compétences dans celui-ci. C'était un projet très intéressant sur un sujet d'actualité et nous a permis d'en apprendre plus sur le monde de la blockchain et des cryptomonnaies. \\
+
+Pour la suite nous avons plusieurs possibilités. Nous avons modélisé des propriétés simples pour nous permettre de vérifier le bon déroulement du protocole. Cependant il y a plusieurs modification que l'on pourrait faire. Tout d'abord, nous avons modélisé le protocole avec seulement 2 joueurs, le but étant de le modéliser pour N joueurs. Dans ce protocole nous avons aussi défini deux règles WinnerA et WinnerB définissant le gagnant, A ou B. Ces règles ne correspondent pas exactement à celle explicitées dans le protocole de départ. En effet dans la documentation du protocole il est expliqué que le gagnant est défini à partir de la parité des secrets. Ce type de règle étant difficilement implémentable en Tamarin, nous avons décidé de réaliser une règle plus simple qui choisi A ou B comme gagnant. \\
+
+Nous aurions pû également nous intéresser à vérifier des propriétés de \textit{liveness} (la propriété sera vraie après une certaine étape de l'exécution) \cite{vivacite}.
+Par exemple, garantir qu'un joueur qui quitte la partie ne peut récupérer son argent qu'avant le premier tour, sinon il perd son argent.
+
 
 \section{Remerciements}
+Nous tenons à remercier Mr Steve Kremer et Mr Jannik Dreier pour nous avoir proposé ce sujet. 
 
-
-
-
-
-
-\begin{comment}
- N = 2^(L) joueurs
- 2^(L)-1 = N-1 1v1 joués
- pi = numéro du match
-\end{comment}
 
 
 \newpage
 \bibliographystyle{plain-fr}
 \bibliography{bibliography.bib}
-
-
-\newpage
-\begin{tabular}{|m{3cm}|m{7cm}}
-\hline
-\rowcolor{grey!40} \textbf{Date} & \textbf{Travail effectué}  \\ 
-\hline 
-\rowcolor{grey!10}  07/02/2018 & Découverte du sujet \\
-\hline
-\rowcolor{grey!10}  14/02/2018 & Installation de Tamarin \newline Choix du protocole : loterie \\
-\hline
-\rowcolor{grey!10}  15/03/2018 & Compréhension du sujet \newline Rédaction du rapport \newline Découverte Tamarin \\
-\hline
-\rowcolor{grey!10}  04/04/2018 & Première version compilable du protocole \\
-\end{tabular}
 
 
 
